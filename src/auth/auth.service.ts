@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class AuthService {
@@ -15,11 +16,13 @@ export class AuthService {
       return { message: 'user already exist' };
     }
 
+    const hashedPassword = await bcrypt.hash(data.password, 10);
+
     return this.prisma.user.create({
       data: {
         name: data.name,
         email: data.email,
-        password: data.password,
+        password: hashedPassword,
       },
     });
   }
@@ -33,9 +36,17 @@ export class AuthService {
     if (!user) {
       return { message: 'user not found' };
     }
-    if (user.password !== data.password) {
+
+    const isPasswordValid = await bcrypt.compare(
+      data.password,
+      String(user.password),
+    );
+
+    if (!isPasswordValid) {
       return { message: 'Invalid username or password' };
     }
-    return user;
+
+    const { password, ...safeUser } = user;
+    return safeUser;
   }
 }
