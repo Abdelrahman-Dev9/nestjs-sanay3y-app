@@ -1,12 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
+import { SignupDto } from './dto/signup.dto';
+import { LoginDto } from './dto/login.dto';
 
 @Injectable()
 export class AuthService {
   constructor(private prisma: PrismaService) {}
 
-  async signup(data: { name: string; email: string; password: string }) {
+  async signup(data: SignupDto) {
     const user = await this.prisma.user.findUnique({
       where: {
         email: data.email,
@@ -27,7 +29,7 @@ export class AuthService {
     });
   }
 
-  async login(data: { email: string; password: string }) {
+  async login(data: LoginDto) {
     const user = await this.prisma.user.findUnique({
       where: {
         email: data.email,
