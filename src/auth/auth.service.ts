@@ -3,6 +3,8 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
 import { SignupDto } from './dto/signup.dto';
 import { LoginDto } from './dto/login.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { sendResetCode } from './mail/mail.service';
 
 @Injectable()
 export class AuthService {
@@ -50,5 +52,37 @@ export class AuthService {
 
     const { password, ...safeUser } = user;
     return safeUser;
+  }
+  async forgotPassword(data: ForgotPasswordDto) {
+    const email = data.email.toLowerCase();
+
+    const user = await this.prisma.user.findUnique({
+      where: { email },
+    });
+
+    // 🔒 Security (don’t reveal if email exists)
+    if (!user) {
+      return { message: 'If this email exists, a code was sent' };
+    }
+
+    // 🔢 generate 6-digit code
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // ⏱ expire after 10 minutes
+    const expiry = new Date(Date.now() + 10 * 60 * 1000);
+
+    // 💾 save to DB
+    await this.prisma.user.update({
+      where: { email },
+      data: {
+        resetCode: code,
+        resetCodeExpiry: expiry,
+      },
+    });
+
+    // 📧 send email
+    await sendResetCode(email, code);
+
+    return { message: 'If this email exists, a code was sent' };
   }
 }
