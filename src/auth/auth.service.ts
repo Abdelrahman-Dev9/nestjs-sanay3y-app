@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
 import { SignupDto } from './dto/signup.dto';
@@ -84,5 +84,28 @@ export class AuthService {
     await sendResetCode(email, code);
 
     return { message: 'If this email exists, a code was sent' };
+  }
+
+  async resetPassword(data: { email: string; code: string }) {
+    const user = await this.prisma.user.findFirst({
+      where: {
+        email: data.email,
+        resetCode: data.code,
+      },
+    });
+
+    if (!user) {
+      throw new BadRequestException('user not found');
+    }
+
+    if (!user.resetCode) {
+      throw new BadRequestException('No reset request found');
+    }
+
+    if (!user.resetCodeExpiry || user.resetCodeExpiry < new Date()) {
+      throw new BadRequestException('Code expired');
+    }
+
+    return user;
   }
 }
