@@ -1,4 +1,4 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import { Body, Controller, Headers, Post } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { SignupDto } from './dto/signup.dto';
 import { LoginDto } from './dto/login.dto';
@@ -22,8 +22,13 @@ export class AuthController {
     return this.authService.forgotPassword(data);
   }
 
-  @Post('reset-password')
-  resetPassword(@Body() data: { email: string; code: string }) {
-    return this.authService.resetPassword(data);
+  @Post('create-new-password')
+  createNewPassword(
+    @Headers('token') authHeader: string,
+    @Body() body: { newPassword: string },
+  ) {
+    const token = authHeader?.split(' ')[1]; // Bearer TOKEN
+
+    return this.authService.createNewPassword(token, body.newPassword);
   }
 }
