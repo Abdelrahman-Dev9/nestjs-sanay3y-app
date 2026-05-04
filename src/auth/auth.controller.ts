@@ -21,6 +21,15 @@ export class AuthController {
   forgotPassword(@Body() data: ForgotPasswordDto) {
     return this.authService.forgotPassword(data);
   }
+  @Post('verify-code')
+  verifyCode(
+    @Headers('token') authHeader: string,
+    @Body() body: { code: string },
+  ) {
+    const token = authHeader?.split(' ')[1]; // Bearer TOKEN
+
+    return this.authService.verifyCode(token, body.code);
+  }
 
   @Post('create-new-password')
   createNewPassword(

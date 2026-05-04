@@ -104,6 +104,31 @@ export class AuthService {
       token,
     };
   }
+  async verifyCode(token: string, code: string) {
+    const payload = this.jwtService.verify<{ userId: string }>(token);
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: payload.userId },
+    });
+
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+
+    // ⏱ check expiry
+    if (!user.resetCodeExpiry || user.resetCodeExpiry < new Date()) {
+      throw new BadRequestException('Code expired');
+    }
+
+    // 🔐 compare code
+    const isMatch = await bcrypt.compare(code, user.resetCode!);
+
+    if (!isMatch) {
+      throw new BadRequestException('Invalid code');
+    }
+
+    return { message: 'Code is correct' };
+  }
   async createNewPassword(token: string, newPassword: string) {
     try {
       const payload = this.jwtService.verify<{ userId: string }>(token);
